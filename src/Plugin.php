@@ -110,7 +110,7 @@ class Plugin
      */
     public function loadConfig()
     {
-        $this->config = Yaml::parseFile($this->getConfigFilePath());
+        $this->config = Yaml::parse($this->getConfigFilePath());
         return $this->config;
     }
 
