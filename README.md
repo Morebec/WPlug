@@ -21,3 +21,10 @@ clone this repository in a vendor directory or add these lines to your `composer
 ### Basic Plugin Example
 ...
 
+
+## TODO
+- Custom Post Types
+- Easy CSS and Javascript enqueuing in admin + frontend.
+- Easy Ajax actions
+- Easy forms + Nonce
+- Documentation + Guides
