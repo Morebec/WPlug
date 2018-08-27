@@ -15,7 +15,7 @@ class Plugin
     /**
      * YAML Plugin Config
      */
-    private $configFielPath;
+    private $configFilePath;
 
     /**
      * Configuration data
@@ -29,26 +29,12 @@ class Plugin
 
     function __construct()
     {
-        //
-        // Register plugin with application object
-        $this->getApplication()->registerPlugin($this);
 
         // LOAD FLAT FILE CONFIG
         $config = $this->loadConfig();
 
-        // Generate constants from config files
-        $PREFIX = strtoupper(ArrayUtils::getOrDefault($config, 'namespace', ''));
-
-        if (array_key_exists('version', $config)) {
-            define($PREFIX . 'VERSION', $config['version']);
-        }
-
-        // dynamic constants
-        if (array_key_exists('constants', $config)) {
-            foreach ($config['constants'] as $key => $value) {
-                define($PREFIX . strtoupper($key), $value);
-            }
-        }
+        // Register plugin with application object
+        $this->getApplication()->registerPlugin($this);
 
         // Add actions
         foreach ($this->getSubscribedActions() as $action => $callbacks) {
@@ -67,22 +53,89 @@ class Plugin
         }
 
         // De/Activation & Un/Install hooks
-        add_action($action, array( $this, $callback ));
         register_activation_hook($this->getPath(), array($this, 'onActivate'));
         register_deactivation_hook($this->getPath(), array($this, 'onDeactivate'));
-        register_uninstall_hook($this->getPath(), array($this, 'onUninstall'));
+        register_uninstall_hook($this->getPath(), array('$this', 'onUninstall'));
 
 
         // Build Menu
         if ($this->isAdmin()) {
             add_action('admin_menu', array($this, 'buildAdminMenus'));
         }
+
+        // styles
+        add_action('admin_init', array($this, 'enqueueAdminStyles'));
+        add_action('admin_init', array($this, 'enqueueAdminScripts'));
+    }
+
+    public function getAdminStyles() {
+        return array();
+    }
+
+    public function getAdminScripts()
+    {
+        return array();
+    }
+
+    public function getFrontEndStyles()
+    {
+        return array();
+    }
+
+    public function getFrontEndScripts()
+    {
+        return array();
+    }
+
+    public function enqueueAdminStyles()
+    {
+        $styles = $this->getAdminStyles();
+        $this->enqueueStyles($styles);
+    }
+
+    public function enqueueAdminScripts()
+    {
+        $scripts = $this->getAdminScripts();
+        $this->enqueueScripts($scripts);
+    }
+
+    public function enqueueFrontEndStyles()
+    {
+        $styles = $this->getFrontEndStyles();
+        $this->enqueueStyles($styles);
+    }
+
+    public function enqueueFrontEndScripts()
+    {
+        $scripts = $this->getFrontEndScripts();
+        $this->enqueueScripts($scripts);
+    }
+
+    private function enqueueStyles($styles)
+    {
+        $assetsDirUrl = $this->getAssetsDirUrl();
+        $namespace = $this->getNamespace();
+        foreach ($styles as $style) {
+            wp_enqueue_style(
+                $namespace . '_' . $style['name'], 
+                $assetsDirUrl . '/' . $style['src'] 
+            );
+        }
+    }
+
+    private function enqueueScripts($scripts) {
+        $assetsDir = $this->getAssetsDirUrl();
+        foreach ($scripts as $script) {
+            wp_enqueue_script(
+                $script['name'], 
+                $assetsDirUrl . '/' . $script['src'] 
+            );
+        }
     }
 
     public function buildAdminMenus() {
         $menus = $this->getAdminMenus();
         if ($menus) {
-            $builder = new AdminMenuBuilder();
             foreach ($menus as $menu) {
                 add_menu_page(
                     $menu['pageTitle'],                                              /* $page_title, */
@@ -97,12 +150,12 @@ class Plugin
         }
     }
 
-
     /**
      * Renders a template
      */
     public function renderView($viewPath, $ctx = array()) {
-       return $this->getApplication()->renderView($viewPath, $ctx);
+       return $this->getApplication()->renderView(
+        '@' . $this->getNamespace() . '/' . $viewPath, $ctx);
     }
 
     /**
@@ -110,7 +163,24 @@ class Plugin
      */
     public function loadConfig()
     {
-        $this->config = Yaml::parse($this->getConfigFilePath());
+        $config = Yaml::parse($this->getConfigFilePath());
+        $config = $config ? $config : [];
+
+        // Generate constants from config files
+        $PREFIX = strtoupper(ArrayUtils::getOrDefault($config, 'namespace', ''));
+
+        if (array_key_exists('version', $config)) {
+            define($PREFIX . 'VERSION', $config['version']);
+        }
+
+        // dynamic constants
+        if (array_key_exists('constants', $config)) {
+            foreach ($config['constants'] as $key => $value) {
+                define($PREFIX . strtoupper($key), $value);
+            }
+        }
+
+        $this->config = $config;
         return $this->config;
     }
 
@@ -217,10 +287,25 @@ class Plugin
     }
 
     /**
-     * Returns the name of the plugin
+     * Returns the name of the plugin as lower case
      */
     public function getName() {
         return pathinfo($this->getPath())['filename'];
+    }
+
+    /**
+     * Returns the namespace of the plugin. 
+     * This is used for many things such as the redering of template files
+     * or the loading of files. By default will upper case the name of the plugin 
+     * and replace all hyphens by underscores.
+     * 
+     * @return string namespace
+     */
+    public function getNamespace()
+    {
+        $defaultStrategy = strtoupper(str_replace("‐", ",", $this->getName()));
+        $config = $this->getConfig();
+        return ArrayUtils::getOrDefault($config, 'namespace', $defaultStrategy);
     }
 
     /**
@@ -239,6 +324,15 @@ class Plugin
     }
 
     /**
+     * Returns the name of the directgory containing this plugin
+     * @return string name of the drectory
+     */
+    public function getDirectoryName()
+    {
+        return pathinfo($this->getDirectory())['basename'];
+    }
+
+    /**
      * Returns the full path to the plugin PHP file
      */
     public function getPath() {
@@ -247,10 +341,47 @@ class Plugin
     }
 
     /**
+     * Returns the plugin's full URL
+     * @return string url
+     */
+    public function getUrl()
+    {
+        return plugins_url($this->getDirectoryName());
+    }
+
+    /**
      * Returns the full path to the directory containing views
      */
     public function getViewsDirPath() {
-        return $this->getDirectory() . DIRECTORY_SEPARATOR . 'views';
+        $config = $this->getConfig();
+        $dir = ArrayUtils::getOrDefault($config, 'views_directory', 'views');
+        return $this->getDirectory() . DIRECTORY_SEPARATOR . $dir;
+    }
+
+    /**
+     * Returns the simple name of the assets directory
+     * @return string name
+     */
+    public function getAssetsDirName()
+    {
+        $config = $this->getConfig();
+        return ArrayUtils::getOrDefault($config, 'assets_directory', 'assets');
+    }
+
+    /**
+     * Returns the Assets directory path
+     * @return string full path
+     */
+    public function getAssetsDirPath() {
+        return $this->getDirectory() . DIRECTORY_SEPARATOR . $this->getAssetsDirName();
+    }
+
+    /**
+     * Returns the Url of the assets directory path
+     * @return [type] [description]
+     */
+    public function getAssetsDirUrl() {
+        return $this->getUrl() . '/' . $this->getAssetsDirName();
     }
 
     /**

@@ -18,14 +18,15 @@ class TwigService
     private $twig;
 
     public function __construct() {
-        $this->loader = new \Twig_Loader_Filesystem();
+        $DUMMY_MAIN_NAMESPACE_PATH = '.';
+        $this->loader = new \Twig_Loader_Filesystem($DUMMY_MAIN_NAMESPACE_PATH);
         $this->twig = new \Twig_Environment($this->loader, array(
             // 'cache' => '/path/to/compilation_cache',
         ));
     }
 
     /**
-     * Adds a path to the loader
+     * Adds a path to the loader with a specific namespace
      */
     public function addPath($path, $namespace) {
         $this->loader->addPath($path, $namespace);

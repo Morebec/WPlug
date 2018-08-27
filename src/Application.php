@@ -32,10 +32,14 @@ class Application
      */
     private $twigService;
 
+    /** @var Database database */
+    private $database;
+
     private function __construct()
     {
         $this->wplugPlugins = array();
         $this->twigService = new TwigService();
+        $this->database = new Database();
     }
 
     public static function instance() {
@@ -77,8 +81,8 @@ class Application
      * Returns the configuration object of a plugin
      * Must be a WPlug Plugin
      */
-    public function getPluginConfig($pluginName) {
-        $plugin = $this->wplugPlugins[$pluginName];
+    public function getPluginConfig($pluginNamespace) {
+        $plugin = $this->wplugPlugins[$pluginNamespace];
         if ($plugin === null) {
             return null;
         }
@@ -90,12 +94,12 @@ class Application
      * so the plugin can be recognised as a WPlug plugin
      */
     public function registerPlugin($wplugPlugin) {
-        $name = $wplugPlugin->getName();
-        $this->wplugPlugins[$name] = $wplugPlugin;
+        $namespace = $wplugPlugin->getNamespace();
+        $this->wplugPlugins[$namespace] = $wplugPlugin;
 
         // Register with twig
         $viewsDirPath = $wplugPlugin->getViewsDirPath();
-        $this->twigService->addPath($viewsDirPath, $name);
+        $this->twigService->addPath($viewsDirPath, $namespace);
     }
 
 
@@ -122,10 +126,43 @@ class Application
     }
 
     /**
+     * Indicates if Wordpress is multisite or not
+     * @return boolean true if multisite otherwise false
+     */
+    public function isMultisite()
+    {
+        return is_multisite();
+    }
+
+    /**
      * Returns the database
      */
     public function getDatabase() {
+        return $this->database;
+    }
 
+    public function getHomeUrl()
+    {
+        return get_home_url();
+    }
+
+    public function getSiteUrl()
+    {
+        return get_site_url();
+    }
+
+    public function getLocale()
+    {
+        return get_locale();
+    }
+
+    /**
+     * Returns the currently active theme
+     * @return string name of the currently active theme
+     */
+    public function getCurrentTheme()
+    {
+        return wp_get_theme();
     }
 
     /**

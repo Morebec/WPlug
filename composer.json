@@ -3,21 +3,6 @@
     "description": "A lightweight, simple opiniated Wordpress Plugin development framework",
     "type": "library",
 
-    "repositories": [
-        {
-            "type": "package",
-            "package": {
-                "name": "jwillp/shuttle-export",
-                "version": "1.0",
-                "source": {
-                    "url": "https://github.com/jwillp/shuttle-export",
-                    "type": "git",
-                    "reference": "origin/master"
-                }
-            }
-        }
-    ],
-
     "require": {
         "php": ">=5.5.9",
         "symfony/yaml": "~2.8",
