@@ -137,15 +137,35 @@ class Plugin
         $menus = $this->getAdminMenus();
         if ($menus) {
             foreach ($menus as $menu) {
+                $menuSlug = ArrayUtils::getOrDefault($menu, 'slug', $this->getName());
                 add_menu_page(
                     $menu['pageTitle'],                                              /* $page_title, */
                     $menu['title'],                                                  /* $menu_title, */
                     ArrayUtils::getOrDefault($menu, 'capability', 'manage_options'), /* $capability, */
-                    ArrayUtils::getOrDefault($menu, 'slug', $this->getName()),       /* $menu_slug, */
+                    $menuSlug,                                                       /* $menu_slug, */
                     array($this, ArrayUtils::getOrDefault($menu, 'function', '')),   /* function */
                     ArrayUtils::getOrDefault($menu, 'icon', ''),                     /* menu_icon */
-                    ArrayUtils::getOrDefault($menu, 'position', null)                /* menu_positiojn */
+                    ArrayUtils::getOrDefault($menu, 'position', null)                /* menu_position */
                 );
+
+                // Sub menus
+                if (!array_key_exists('submenus', $menu) || !$menu['submenus'] ) {
+                    $menu['submenus'] = array();
+                }
+
+                foreach ($menu['submenus'] as $submenu) {
+                    add_submenu_page(
+                        $menuSlug,                                                       /* parent slug */
+                        $submenu['pageTitle'],                                           /* page_title */
+                        $submenu['title'],                                               /* menu_title */
+                        ArrayUtils::getOrDefault($menu, 'capability', 'manage_options'), /* $capability, */
+                        $submenu['slug'],                                                /* menu_slug */
+                        array($this, ArrayUtils::getOrDefault($submenu, 'function', '')),/* function */
+                        ArrayUtils::getOrDefault($menu, 'icon', ''),                     /* menu_icon */
+                        ArrayUtils::getOrDefault($menu, 'position', null)                /* menu_position */
+
+                    );
+                }
             }
         }
     }

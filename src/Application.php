@@ -39,7 +39,7 @@ class Application
     {
         $this->wplugPlugins = array();
         $this->twigService = new TwigService();
-        $this->database = new Database();
+        $this->database = new Database($this);
     }
 
     public static function instance() {
@@ -71,9 +71,12 @@ class Application
      * Returns all plugins
      */
     public function getPlugins() {
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
         // $pluginData = get_plugin_data( __FILE__ );
         $activePlugins = get_option('active_plugins');
-        $plugins = get_plugins();
+        $plugins = \get_plugins();
         return $plugins;
     }
 
@@ -100,14 +103,6 @@ class Application
         // Register with twig
         $viewsDirPath = $wplugPlugin->getViewsDirPath();
         $this->twigService->addPath($viewsDirPath, $namespace);
-    }
-
-
-    /**
-     * Returns the template renderer Twig
-     */
-    public function getTemplateRenderer() {
-
     }
 
     /**
