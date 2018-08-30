@@ -106,6 +106,33 @@ class Application
     }
 
     /**
+     * Redirects the user to a specific page
+     * @param  string $url Destination URL
+     */
+    public function redirect($url)
+    {
+        wp_redirect($url ,301);
+    }
+
+    /**
+     * Returns the admin base url
+     * @return string url
+     */
+    public function getAdminUrl()
+    {
+        return admin_url();
+    }
+
+    /**
+     * Returns the Twig Service
+     * @return TwigService Twig Service Instance
+     */
+    public function getTwigService()
+    {
+        return $this->twigService;
+    }
+
+    /**
      * Returns the version of this WPlug application object
      */
     public function getVersion() {

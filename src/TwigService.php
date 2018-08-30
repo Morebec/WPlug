@@ -32,6 +32,11 @@ class TwigService
         $this->loader->addPath($path, $namespace);
     }
 
+    public function addFilter($twigFilter)
+    {
+        $this->twig->addFilter($twigFilter);
+    }
+
     /**
      * Renders a template with a specific ctx
      */

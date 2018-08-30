@@ -51,8 +51,6 @@ class DatabaseMigrator
                                    ->where('plugin_name', $migration->getPluginName())
                                    ->first()
             ;
-            
-
             if (!$entry || $entry->status == 'failed') {
                 $this->runMigration($migration, $entry);
             } else {
